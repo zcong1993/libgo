@@ -12,7 +12,7 @@ import (
 
 const dbFile = "./test.db"
 
-type User struct{
+type User struct {
 	Name string
 }
 

@@ -6,7 +6,7 @@ import "github.com/jinzhu/gorm"
 type TxFunc func(tx *gorm.DB) error
 
 // UseTx is transaction wrapper for gorm
-func UseTx(db *gorm.DB, funcs... TxFunc) error {
+func UseTx(db *gorm.DB, funcs ...TxFunc) error {
 	tx := db.Begin()
 	defer func() {
 		if r := recover(); r != nil {
