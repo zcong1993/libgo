@@ -4,7 +4,8 @@ import "github.com/gin-gonic/gin"
 
 // ApiError is interface of ApiError
 type ApiError interface {
-	GetCode() int
+	GetStatusCode() int
+	GetCode() string
 	GetMessage() string
 }
 
@@ -16,19 +17,25 @@ func CreateGinController(apiController ApiController) func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
 		apiError := apiController(ctx)
 		if apiError != nil {
-			ctx.JSON(apiError.GetCode(), gin.H{"message": apiError.GetMessage()})
+			ctx.JSON(apiError.GetStatusCode(), gin.H{"message": apiError.GetMessage(), "code": apiError.GetCode()})
 		}
 	}
 }
 
 // DefaultError is default error struct impl ApiError
 type DefaultError struct {
-	Code    int
-	Message string
+	StatusCode int
+	Code       string
+	Message    string
+}
+
+// GetStatusCode impl GetStatusCode
+func (de *DefaultError) GetStatusCode() int {
+	return de.StatusCode
 }
 
 // GetCode impl GetCode
-func (de *DefaultError) GetCode() int {
+func (de *DefaultError) GetCode() string {
 	return de.Code
 }
 
@@ -38,6 +45,6 @@ func (de *DefaultError) GetMessage() string {
 }
 
 // NewDefaultError return a new default error
-func NewDefaultError(code int, message string) *DefaultError {
-	return &DefaultError{Code: code, Message: message}
+func NewDefaultError(statusCode int, code string, message string) *DefaultError {
+	return &DefaultError{StatusCode: statusCode, Code: code, Message: message}
 }
