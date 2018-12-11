@@ -1,6 +1,8 @@
 package mysql
 
-import "github.com/jinzhu/gorm"
+import (
+	"github.com/jinzhu/gorm"
+)
 
 // TxFunc is params type of gorm tx
 type TxFunc func(tx *gorm.DB) error
@@ -27,4 +29,17 @@ func UseTx(db *gorm.DB, funcs ...TxFunc) error {
 	}
 
 	return tx.Commit().Error
+}
+
+// WithPagination warp a orm query, return total count and query instance
+func WithPagination(db *gorm.DB, limit, offset int) (int, *gorm.DB, error) {
+	var count int
+	count = 0
+	err := db.Count(&count).Error
+
+	if err != nil {
+		return count, nil, err
+	}
+
+	return count, db.Limit(limit).Offset(offset), nil
 }
