@@ -1,6 +1,9 @@
 package ginerr
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"net/http"
+)
 
 // ApiError is interface of ApiError
 type ApiError interface {
@@ -17,6 +20,10 @@ func CreateGinController(apiController ApiController) func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
 		apiError := apiController(ctx)
 		if apiError != nil {
+			if apiError.GetStatusCode() == http.StatusInternalServerError {
+				ctx.Status(http.StatusInternalServerError)
+				return
+			}
 			ctx.JSON(apiError.GetStatusCode(), gin.H{"message": apiError.GetMessage(), "code": apiError.GetCode()})
 		}
 	}
