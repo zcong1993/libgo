@@ -28,6 +28,12 @@ type OffsetLimitPaginator struct {
 	DefaultNumPerPage int
 }
 
+func NewOffsetLimitPaginator(defaultNumPerPage int) *OffsetLimitPaginator {
+	return &OffsetLimitPaginator{DefaultNumPerPage: defaultNumPerPage}
+}
+
 func (op *OffsetLimitPaginator) ParsePagination(c *gin.Context) (limit, offset int) {
 	return parsePaginationArg(c, "limit", op.DefaultNumPerPage), parsePaginationArg(c, "offset", 0)
 }
+
+var DefaultOffsetLimitPaginator = NewOffsetLimitPaginator(100)
