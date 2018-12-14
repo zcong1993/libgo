@@ -43,3 +43,17 @@ func WithPagination(db *gorm.DB, limit, offset int) (int, *gorm.DB, error) {
 
 	return count, db.Limit(limit).Offset(offset), nil
 }
+
+func PaginationQuery(db *gorm.DB, limit, offset int, t interface{}) (int, error) {
+	c, q, err := WithPagination(db, limit, offset)
+	if err != nil {
+		return c, err
+	}
+
+	err = q.Find(&t).Error
+	if err != nil {
+		return c, err
+	}
+
+	return c, nil
+}
