@@ -1,4 +1,4 @@
-package ginerr
+package ginhelper
 
 import (
 	"github.com/gin-gonic/gin"
