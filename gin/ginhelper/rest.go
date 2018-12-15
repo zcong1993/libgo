@@ -36,7 +36,7 @@ func (r *Rest) Destroy(ctx *gin.Context, id string) {
 	ctx.Status(http.StatusMethodNotAllowed)
 }
 
-func BindRouter(r *gin.Engine, prefix string, rest IRest) {
+func BindRouter(r gin.IRoutes, prefix string, rest IRest) {
 	withID := fmt.Sprintf("%s/:id", prefix)
 	// list
 	r.GET(prefix, func(c *gin.Context) {
