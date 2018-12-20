@@ -35,6 +35,8 @@ type IRest interface {
 
 type Rest struct{}
 
+var _ IRest = &Rest{}
+
 func (r *Rest) List(ctx *gin.Context, restView IRestView) {
 	limit, offset := DefaultOffsetLimitPaginator.ParsePagination(ctx)
 	q := restView.GetQuerySet().Order(restView.GetOrderBy())
@@ -88,8 +90,9 @@ func (r *Rest) Destroy(ctx *gin.Context, restView IRestView, id string) {
 	ctx.Status(http.StatusNoContent)
 }
 
-type RestView struct {
-}
+type RestView struct{}
+
+var _ IRestView = &RestView{}
 
 func (r *RestView) GetQuerySet() *gorm.DB {
 	panic("not implement")
