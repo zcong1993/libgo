@@ -143,7 +143,7 @@ func BindRouter(r gin.IRoutes, prefix string, restView IRestView, rest IRest, me
 		})
 
 		// update one
-		r.PATCH(withID, func(ctx *gin.Context) {
+		r.PUT(withID, func(ctx *gin.Context) {
 			//id := c.Param("id")
 			ctx.Status(http.StatusMethodNotAllowed)
 		})
@@ -172,7 +172,7 @@ func BindRouter(r gin.IRoutes, prefix string, restView IRestView, rest IRest, me
 			})
 		case Update:
 			// update one
-			r.PATCH(withID, func(ctx *gin.Context) {
+			r.PUT(withID, func(ctx *gin.Context) {
 				//id := c.Param("id")
 				ctx.Status(http.StatusMethodNotAllowed)
 			})
