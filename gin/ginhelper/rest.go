@@ -2,9 +2,15 @@ package ginhelper
 
 import (
 	"fmt"
+	"github.com/VividCortex/mysqlerr"
 	"github.com/gin-gonic/gin"
+	"github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
 	"net/http"
+)
+
+const (
+	ERROR_DUPLICATE = "ERROR_DUPLICATE"
 )
 
 const (
@@ -21,6 +27,9 @@ type IRestView interface {
 	GetQuerySet() *gorm.DB
 	GetSerializers() interface{}
 	GetSerializer() interface{}
+	GetCreateSerializer() interface{}
+	SaveData(interface{}) (interface{}, error)
+	UpdateData(interface{}, string) (interface{}, error)
 	GetOrderBy() string
 	LookupField() string
 }
@@ -53,7 +62,23 @@ func (r *Rest) List(ctx *gin.Context, restView IRestView) {
 }
 
 func (r *Rest) Create(ctx *gin.Context, restView IRestView) {
-	ctx.Status(http.StatusMethodNotAllowed)
+	input := restView.GetCreateSerializer()
+	err := ctx.ShouldBindJSON(input)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, err)
+		return
+	}
+	res, err := restView.SaveData(input)
+	if err != nil {
+		if err, ok := err.(*mysql.MySQLError); ok && err.Number == mysqlerr.ER_DUP_ENTRY {
+			ctx.JSON(http.StatusBadRequest, &ErrResp{Code: ERROR_DUPLICATE, Message: ERROR_DUPLICATE})
+			return
+		}
+		ctx.Status(http.StatusInternalServerError)
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, res)
 }
 
 func (r *Rest) Retrieve(ctx *gin.Context, restView IRestView, id string) {
@@ -74,7 +99,30 @@ func (r *Rest) Retrieve(ctx *gin.Context, restView IRestView, id string) {
 }
 
 func (r *Rest) Update(ctx *gin.Context, restView IRestView, id string) {
-	ctx.Status(http.StatusMethodNotAllowed)
+	data := restView.GetSerializer()
+	if restView.GetQuerySet().First(data, fmt.Sprintf("%s = ?", restView.LookupField()), id).RecordNotFound() {
+		r.Create(ctx, restView)
+		return
+	}
+
+	input := restView.GetCreateSerializer()
+	err := ctx.ShouldBindJSON(input)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	_, err = restView.UpdateData(input, id)
+	if err != nil {
+		if err, ok := err.(*mysql.MySQLError); ok && err.Number == mysqlerr.ER_DUP_ENTRY {
+			ctx.JSON(http.StatusBadRequest, &ErrResp{Code: ERROR_DUPLICATE, Message: ERROR_DUPLICATE})
+			return
+		}
+		ctx.Status(http.StatusInternalServerError)
+		return
+	}
+
+	ctx.Status(http.StatusNoContent)
 }
 
 func (r *Rest) Destroy(ctx *gin.Context, restView IRestView, id string) {
@@ -106,12 +154,24 @@ func (r *RestView) GetSerializer() interface{} {
 	panic("not implement")
 }
 
+func (r *RestView) GetCreateSerializer() interface{} {
+	panic("not implement")
+}
+
 func (r *RestView) GetOrderBy() string {
 	return "created_at DESC"
 }
 
 func (r *RestView) LookupField() string {
 	return "id"
+}
+
+func (r *RestView) SaveData(in interface{}) (interface{}, error) {
+	panic("not implement")
+}
+
+func (r *RestView) UpdateData(in interface{}, id string) (interface{}, error) {
+	panic("not implement")
 }
 
 func BindRouter(r gin.IRoutes, prefix string, restView IRestView, rest IRest, methods ...uint) {
@@ -125,7 +185,7 @@ func BindRouter(r gin.IRoutes, prefix string, restView IRestView, rest IRest, me
 
 		// post
 		r.POST(prefix, func(ctx *gin.Context) {
-			ctx.Status(http.StatusMethodNotAllowed)
+			rest.Create(ctx, restView)
 		})
 
 		// get one
@@ -144,8 +204,8 @@ func BindRouter(r gin.IRoutes, prefix string, restView IRestView, rest IRest, me
 
 		// update one
 		r.PUT(withID, func(ctx *gin.Context) {
-			//id := c.Param("id")
-			ctx.Status(http.StatusMethodNotAllowed)
+			id := ctx.Param("id")
+			rest.Update(ctx, restView, id)
 		})
 
 		return
@@ -168,13 +228,13 @@ func BindRouter(r gin.IRoutes, prefix string, restView IRestView, rest IRest, me
 		case Create:
 			// post
 			r.POST(prefix, func(ctx *gin.Context) {
-				ctx.Status(http.StatusMethodNotAllowed)
+				rest.Create(ctx, restView)
 			})
 		case Update:
 			// update one
 			r.PUT(withID, func(ctx *gin.Context) {
-				//id := c.Param("id")
-				ctx.Status(http.StatusMethodNotAllowed)
+				id := ctx.Param("id")
+				rest.Update(ctx, restView, id)
 			})
 		case Destroy:
 			// delete one
