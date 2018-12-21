@@ -10,7 +10,7 @@ import (
 func TestCreateGinController(t *testing.T) {
 	r := gin.Default()
 	r.GET("/", CreateGinController(func(ctx *gin.Context) ApiError {
-		return NewDefaultError(400, "validate_error", "Validate error.")
+		return NewDefaultError(400, "validate_error", "Validate error.", nil)
 	}))
 
 	w := httptest.NewRecorder()

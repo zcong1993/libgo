@@ -10,6 +10,7 @@ type ApiError interface {
 	GetStatusCode() int
 	GetCode() string
 	GetMessage() string
+	GetErrors() interface{}
 }
 
 // ApiController is function type we wrapped
@@ -24,7 +25,7 @@ func CreateGinController(apiController ApiController) func(ctx *gin.Context) {
 				ctx.Status(http.StatusInternalServerError)
 				return
 			}
-			ctx.JSON(apiError.GetStatusCode(), gin.H{"message": apiError.GetMessage(), "code": apiError.GetCode()})
+			ctx.JSON(apiError.GetStatusCode(), gin.H{"message": apiError.GetMessage(), "code": apiError.GetCode(), "errors": apiError.GetErrors()})
 		}
 	}
 }
@@ -34,6 +35,7 @@ type DefaultError struct {
 	StatusCode int
 	Code       string
 	Message    string
+	Errors     interface{}
 }
 
 // GetStatusCode impl GetStatusCode
@@ -51,7 +53,12 @@ func (de *DefaultError) GetMessage() string {
 	return de.Message
 }
 
+// GetErrors impl GetErrors
+func (de *DefaultError) GetErrors() interface{} {
+	return de.Errors
+}
+
 // NewDefaultError return a new default error
-func NewDefaultError(statusCode int, code string, message string) *DefaultError {
-	return &DefaultError{StatusCode: statusCode, Code: code, Message: message}
+func NewDefaultError(statusCode int, code string, message string, errors interface{}) *DefaultError {
+	return &DefaultError{StatusCode: statusCode, Code: code, Message: message, Errors: errors}
 }
