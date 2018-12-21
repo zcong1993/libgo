@@ -4,8 +4,9 @@ import "time"
 
 // ErrResp is error response
 type ErrResp struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
+	Code    string      `json:"code"`
+	Message string      `json:"message"`
+	Errors  interface{} `json:"errors"`
 }
 
 type Model struct {

@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
+	"github.com/zcong1993/libgo/validator"
 	"net/http"
 )
 
@@ -42,6 +43,10 @@ type IRest interface {
 	Destroy(ctx *gin.Context, restView IRestView, id string)
 }
 
+func createInvalidErr(errors interface{}) *ErrResp {
+	return &ErrResp{Code: "INVALID_PARAMS", Message: "INVALID_PARAMS", Errors: errors}
+}
+
 type Rest struct{}
 
 var _ IRest = &Rest{}
@@ -65,7 +70,7 @@ func (r *Rest) Create(ctx *gin.Context, restView IRestView) {
 	input := restView.GetCreateSerializer()
 	err := ctx.ShouldBindJSON(input)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, err)
+		ctx.JSON(http.StatusBadRequest, createInvalidErr(validator.NormalizeErr(err)))
 		return
 	}
 	res, err := restView.SaveData(input)
@@ -108,7 +113,7 @@ func (r *Rest) Update(ctx *gin.Context, restView IRestView, id string) {
 	input := restView.GetCreateSerializer()
 	err := ctx.ShouldBindJSON(input)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, err)
+		ctx.JSON(http.StatusBadRequest, createInvalidErr(validator.NormalizeErr(err)))
 		return
 	}
 
