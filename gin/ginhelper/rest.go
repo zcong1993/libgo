@@ -11,10 +11,12 @@ import (
 )
 
 const (
+	// ERROR_DUPLICATE is duplicate error code
 	ERROR_DUPLICATE = "ERROR_DUPLICATE"
 )
 
 const (
+	// List is list method
 	List = iota
 	Create
 	Retrieve
@@ -22,8 +24,10 @@ const (
 	Destroy
 )
 
+// ReadOnly is enum of read only methods
 var ReadOnly = []uint{List, Retrieve}
 
+// IRestView is rest view set interface
 type IRestView interface {
 	GetQuerySet() *gorm.DB
 	GetSerializers() interface{}
@@ -35,6 +39,7 @@ type IRestView interface {
 	LookupField() string
 }
 
+// IRest is rest interface
 type IRest interface {
 	List(ctx *gin.Context, restView IRestView)
 	Create(ctx *gin.Context, restView IRestView)
@@ -47,10 +52,12 @@ func createInvalidErr(errors interface{}) *ErrResp {
 	return &ErrResp{Code: "INVALID_PARAMS", Message: "INVALID_PARAMS", Errors: errors}
 }
 
+// Rest is struct impl IRest interface
 type Rest struct{}
 
 var _ IRest = &Rest{}
 
+// List impl IRest's List
 func (r *Rest) List(ctx *gin.Context, restView IRestView) {
 	limit, offset := DefaultOffsetLimitPaginator.ParsePagination(ctx)
 	q := restView.GetQuerySet().Order(restView.GetOrderBy())
@@ -66,6 +73,7 @@ func (r *Rest) List(ctx *gin.Context, restView IRestView) {
 	ResponsePagination(ctx, count, data)
 }
 
+// Create impl IRest's Create
 func (r *Rest) Create(ctx *gin.Context, restView IRestView) {
 	input := restView.GetCreateSerializer()
 	err := ctx.ShouldBindJSON(input)
@@ -86,6 +94,7 @@ func (r *Rest) Create(ctx *gin.Context, restView IRestView) {
 	ctx.JSON(http.StatusCreated, res)
 }
 
+// Retrieve impl IRest's Retrieve
 func (r *Rest) Retrieve(ctx *gin.Context, restView IRestView, id string) {
 	data := restView.GetSerializer()
 
@@ -103,6 +112,7 @@ func (r *Rest) Retrieve(ctx *gin.Context, restView IRestView, id string) {
 	ctx.JSON(http.StatusOK, data)
 }
 
+// Update impl IRest's Update
 func (r *Rest) Update(ctx *gin.Context, restView IRestView, id string) {
 	data := restView.GetSerializer()
 	if restView.GetQuerySet().First(data, fmt.Sprintf("%s = ?", restView.LookupField()), id).RecordNotFound() {
@@ -130,6 +140,7 @@ func (r *Rest) Update(ctx *gin.Context, restView IRestView, id string) {
 	ctx.Status(http.StatusNoContent)
 }
 
+// Destroy impl IRest's Destroy
 func (r *Rest) Destroy(ctx *gin.Context, restView IRestView, id string) {
 	err := restView.GetQuerySet().Delete(restView.GetSerializer(), fmt.Sprintf("%s = ?", restView.LookupField()), id).Error
 	if err != nil {
@@ -143,42 +154,52 @@ func (r *Rest) Destroy(ctx *gin.Context, restView IRestView, id string) {
 	ctx.Status(http.StatusNoContent)
 }
 
+// RestView is struct impl IRestView interface
 type RestView struct{}
 
 var _ IRestView = &RestView{}
 
+// GetQuerySet impl IRestView's GetQuerySet
 func (r *RestView) GetQuerySet() *gorm.DB {
 	panic("not implement")
 }
 
+// GetSerializers impl IRestView's GetSerializers
 func (r *RestView) GetSerializers() interface{} {
 	panic("not implement")
 }
 
+// GetSerializer impl IRestView's GetSerializer
 func (r *RestView) GetSerializer() interface{} {
 	panic("not implement")
 }
 
+// GetCreateSerializer impl IRestView's GetCreateSerializer
 func (r *RestView) GetCreateSerializer() interface{} {
 	panic("not implement")
 }
 
+// GetOrderBy impl IRestView's GetOrderBy
 func (r *RestView) GetOrderBy() string {
 	return "created_at DESC"
 }
 
+// LookupField impl IRestView's LookupField
 func (r *RestView) LookupField() string {
 	return "id"
 }
 
+// SaveData impl IRestView's SaveData
 func (r *RestView) SaveData(in interface{}) (interface{}, error) {
 	panic("not implement")
 }
 
+// UpdateData impl IRestView's UpdateData
 func (r *RestView) UpdateData(in interface{}, id string) (interface{}, error) {
 	panic("not implement")
 }
 
+// BindRouter bind rest group routers
 func BindRouter(r gin.IRoutes, prefix string, restView IRestView, rest IRest, methods ...uint) {
 	withID := fmt.Sprintf("%s/:id", prefix)
 

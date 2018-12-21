@@ -9,6 +9,7 @@ type ErrResp struct {
 	Errors  interface{} `json:"errors"`
 }
 
+// Model is same as gorm.Model but with json tag
 type Model struct {
 	ID        uint       `json:"id" gorm:"primary_key"`
 	CreatedAt time.Time  `json:"created_at"`
