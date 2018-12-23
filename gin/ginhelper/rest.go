@@ -5,6 +5,7 @@ import (
 	"github.com/VividCortex/mysqlerr"
 	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
+	"github.com/jinzhu/copier"
 	"github.com/jinzhu/gorm"
 	"github.com/zcong1993/libgo/validator"
 	"net/http"
@@ -30,8 +31,8 @@ var ReadOnly = []uint{List, Retrieve}
 // IRestView is rest view set interface
 type IRestView interface {
 	GetQuerySet() *gorm.DB
-	GetSerializers() interface{}
-	GetSerializer() interface{}
+	GetModel(isMany bool) interface{}
+	GetSerializer(isMany bool) interface{}
 	GetCreateSerializer() interface{}
 	SaveData(interface{}) (interface{}, error)
 	UpdateData(interface{}, string) (interface{}, error)
@@ -52,6 +53,13 @@ func createInvalidErr(errors interface{}) *ErrResp {
 	return &ErrResp{Code: "INVALID_PARAMS", Message: "INVALID_PARAMS", Errors: errors}
 }
 
+func mustCopy(toValue, fromValue interface{}) {
+	err := copier.Copy(toValue, fromValue)
+	if err != nil {
+		panic("copy error")
+	}
+}
+
 // Rest is struct impl IRest interface
 type Rest struct{}
 
@@ -62,7 +70,7 @@ func (r *Rest) List(ctx *gin.Context, restView IRestView) {
 	limit, offset := DefaultOffsetLimitPaginator.ParsePagination(ctx)
 	q := restView.GetQuerySet().Order(restView.GetOrderBy())
 
-	data := restView.GetSerializers()
+	data := restView.GetModel(true)
 
 	count, err := PaginationQuery(q, data, limit, offset)
 	if err != nil {
@@ -70,7 +78,15 @@ func (r *Rest) List(ctx *gin.Context, restView IRestView) {
 		return
 	}
 
-	ResponsePagination(ctx, count, data)
+	out := data
+	se := restView.GetSerializer(true)
+
+	if se != nil {
+		out = se
+		mustCopy(out, data)
+	}
+
+	ResponsePagination(ctx, count, out)
 }
 
 // Create impl IRest's Create
@@ -91,12 +107,21 @@ func (r *Rest) Create(ctx *gin.Context, restView IRestView) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, res)
+	out := res
+
+	se := restView.GetSerializer(false)
+
+	if se != nil {
+		out = se
+		mustCopy(out, res)
+	}
+
+	ctx.JSON(http.StatusCreated, out)
 }
 
 // Retrieve impl IRest's Retrieve
 func (r *Rest) Retrieve(ctx *gin.Context, restView IRestView, id string) {
-	data := restView.GetSerializer()
+	data := restView.GetModel(false)
 
 	err := restView.GetQuerySet().First(data, fmt.Sprintf("%s = ?", restView.LookupField()), id).Error
 
@@ -109,12 +134,20 @@ func (r *Rest) Retrieve(ctx *gin.Context, restView IRestView, id string) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, data)
+	out := data
+	se := restView.GetSerializer(false)
+
+	if se != nil {
+		out = se
+		mustCopy(out, data)
+	}
+
+	ctx.JSON(http.StatusOK, out)
 }
 
 // Update impl IRest's Update
 func (r *Rest) Update(ctx *gin.Context, restView IRestView, id string) {
-	data := restView.GetSerializer()
+	data := restView.GetModel(false)
 	if restView.GetQuerySet().First(data, fmt.Sprintf("%s = ?", restView.LookupField()), id).RecordNotFound() {
 		r.Create(ctx, restView)
 		return
@@ -142,7 +175,7 @@ func (r *Rest) Update(ctx *gin.Context, restView IRestView, id string) {
 
 // Destroy impl IRest's Destroy
 func (r *Rest) Destroy(ctx *gin.Context, restView IRestView, id string) {
-	err := restView.GetQuerySet().Delete(restView.GetSerializer(), fmt.Sprintf("%s = ?", restView.LookupField()), id).Error
+	err := restView.GetQuerySet().Delete(restView.GetModel(false), fmt.Sprintf("%s = ?", restView.LookupField()), id).Error
 	if err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			ctx.Status(http.StatusNoContent)
@@ -164,14 +197,13 @@ func (r *RestView) GetQuerySet() *gorm.DB {
 	panic("not implement")
 }
 
-// GetSerializers impl IRestView's GetSerializers
-func (r *RestView) GetSerializers() interface{} {
+// GetModel impl IRestView's GetModel
+func (r *RestView) GetModel(isMany bool) interface{} {
 	panic("not implement")
 }
 
-// GetSerializer impl IRestView's GetSerializer
-func (r *RestView) GetSerializer() interface{} {
-	panic("not implement")
+func (r *RestView) GetSerializer(isMany bool) interface{} {
+	return nil
 }
 
 // GetCreateSerializer impl IRestView's GetCreateSerializer
