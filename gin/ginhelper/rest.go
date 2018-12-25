@@ -65,6 +65,14 @@ type Rest struct{}
 
 var _ IRest = &Rest{}
 
+func getCreateSerializer(restView IRestView) interface{} {
+	cs := restView.GetCreateSerializer()
+	if cs == nil {
+		return restView.GetModel(false)
+	}
+	return cs
+}
+
 // List impl IRest's List
 func (r *Rest) List(ctx *gin.Context, restView IRestView) {
 	limit, offset := DefaultOffsetLimitPaginator.ParsePagination(ctx)
@@ -91,7 +99,7 @@ func (r *Rest) List(ctx *gin.Context, restView IRestView) {
 
 // Create impl IRest's Create
 func (r *Rest) Create(ctx *gin.Context, restView IRestView) {
-	input := restView.GetCreateSerializer()
+	input := getCreateSerializer(restView)
 	err := ctx.ShouldBindJSON(input)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, createInvalidErr(validator.NormalizeErr(err)))
@@ -153,7 +161,7 @@ func (r *Rest) Update(ctx *gin.Context, restView IRestView, id string) {
 		return
 	}
 
-	input := restView.GetCreateSerializer()
+	input := getCreateSerializer(restView)
 	err := ctx.ShouldBindJSON(input)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, createInvalidErr(validator.NormalizeErr(err)))
