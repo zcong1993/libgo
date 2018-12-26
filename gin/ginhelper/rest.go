@@ -7,6 +7,7 @@ import (
 	"github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/copier"
 	"github.com/jinzhu/gorm"
+	"github.com/zcong1993/libgo/utils"
 	"github.com/zcong1993/libgo/validator"
 	"net/http"
 )
@@ -276,6 +277,9 @@ func BindRouter(r gin.IRoutes, prefix string, restView IRestView, rest IRest, me
 
 		return
 	}
+
+	mds := utils.NewUintSet(methods...)
+	methods = mds.ToSlice()
 
 	for _, v := range methods {
 		switch v {
