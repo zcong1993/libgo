@@ -10,6 +10,7 @@ import (
 	"github.com/zcong1993/libgo/utils"
 	"github.com/zcong1993/libgo/validator"
 	"net/http"
+	"strings"
 )
 
 const (
@@ -54,11 +55,23 @@ func createInvalidErr(errors interface{}) *ErrResp {
 	return &ErrResp{Code: "INVALID_PARAMS", Message: "INVALID_PARAMS", Errors: errors}
 }
 
-func mustCopy(toValue, fromValue interface{}) {
+func MustCopy(toValue, fromValue interface{}) {
 	err := copier.Copy(toValue, fromValue)
 	if err != nil {
 		panic("copy error")
 	}
+}
+
+func NormalizeBatchQuery(in string) ([]string, bool) {
+	tmpArr := strings.Split(in, ",")
+	out := make([]string, len(tmpArr))
+	for i, v := range tmpArr {
+		out[i] = strings.TrimSpace(v)
+		if out[i] == "" {
+			return out, false
+		}
+	}
+	return out, true
 }
 
 // Rest is struct impl IRest interface
@@ -92,7 +105,7 @@ func (r *Rest) List(ctx *gin.Context, restView IRestView) {
 
 	if se != nil {
 		out = se
-		mustCopy(out, data)
+		MustCopy(out, data)
 	}
 
 	ResponsePagination(ctx, count, out)
@@ -122,7 +135,7 @@ func (r *Rest) Create(ctx *gin.Context, restView IRestView) {
 
 	if se != nil {
 		out = se
-		mustCopy(out, res)
+		MustCopy(out, res)
 	}
 
 	ctx.JSON(http.StatusCreated, out)
@@ -148,7 +161,7 @@ func (r *Rest) Retrieve(ctx *gin.Context, restView IRestView, id string) {
 
 	if se != nil {
 		out = se
-		mustCopy(out, data)
+		MustCopy(out, data)
 	}
 
 	ctx.JSON(http.StatusOK, out)
