@@ -51,7 +51,7 @@ func PaginationQuery(db *gorm.DB, limit, offset int, t interface{}) (int, error)
 		return c, err
 	}
 
-	err = q.Find(&t).Error
+	err = q.Find(t).Error
 	if err != nil {
 		return c, err
 	}
