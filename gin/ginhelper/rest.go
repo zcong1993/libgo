@@ -55,6 +55,7 @@ func createInvalidErr(errors interface{}) *ErrResp {
 	return &ErrResp{Code: "INVALID_PARAMS", Message: "INVALID_PARAMS", Errors: errors}
 }
 
+// MustCopy must copy a struct or slice to other struct or slice
 func MustCopy(toValue, fromValue interface{}) {
 	err := copier.Copy(toValue, fromValue)
 	if err != nil {
